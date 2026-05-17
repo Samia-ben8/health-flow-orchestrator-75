@@ -9,6 +9,11 @@ async function handle<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+function throwIfError<T extends { error?: string }>(json: T): T {
+  if (json && json.error) throw new Error(String(json.error));
+  return json;
+}
+
 export interface SessionStartResponse {
   thread_id: string;
   status?: string;
@@ -26,33 +31,44 @@ export interface MedicalStateData {
   [k: string]: unknown;
 }
 
-interface BackendEnvelope {
-  success?: boolean;
+export interface QuestionResponse {
+  success: true;
   thread_id?: string;
-  data?: MedicalStateData;
-  error?: string;
+  question_number: number;
+  question: string;
+  completed_questions?: false;
 }
 
-async function unwrap(res: Response): Promise<MedicalStateData> {
-  const json = await handle<BackendEnvelope | MedicalStateData>(res);
-  if (json && typeof json === "object" && "error" in json && json.error) {
-    throw new Error(String(json.error));
-  }
-  // Envelope from /consultation/start and /consultation/resume
-  if (json && typeof json === "object" && "data" in json && json.data) {
-    return json.data as MedicalStateData;
-  }
-  return json as MedicalStateData;
+export interface ConsultationCompletedResponse {
+  success: true;
+  completed_questions: true;
+  data: MedicalStateData;
 }
+
+export type AnswerResponse = QuestionResponse | ConsultationCompletedResponse;
 
 export const api = {
   startSession: () =>
-    fetch(`${API_BASE}/sessions/start`, { method: "POST" }).then(handle<SessionStartResponse>),
+    fetch(`${API_BASE}/sessions/start`, { method: "POST" })
+      .then(handle<SessionStartResponse & { error?: string }>)
+      .then(throwIfError),
 
   startConsultation: (thread_id: string) =>
     fetch(`${API_BASE}/consultation/start?thread_id=${encodeURIComponent(thread_id)}`, {
       method: "POST",
-    }).then(unwrap),
+    })
+      .then(handle<QuestionResponse & { error?: string }>)
+      .then(throwIfError),
+
+  answerQuestion: (thread_id: string, answer: string) =>
+    fetch(
+      `${API_BASE}/consultation/answer?thread_id=${encodeURIComponent(
+        thread_id,
+      )}&answer=${encodeURIComponent(answer)}`,
+      { method: "POST" },
+    )
+      .then(handle<AnswerResponse & { error?: string }>)
+      .then(throwIfError),
 
   resumeConsultation: (thread_id: string, physician_treatment: string) =>
     fetch(
@@ -60,7 +76,10 @@ export const api = {
         thread_id,
       )}&physician_treatment=${encodeURIComponent(physician_treatment)}`,
       { method: "POST" },
-    ).then(unwrap),
+    )
+      .then(handle<{ success: boolean; thread_id: string; data: MedicalStateData; error?: string }>)
+      .then(throwIfError)
+      .then((j) => j.data),
 
   getConsultation: (thread_id: string) =>
     fetch(`${API_BASE}/consultation/${encodeURIComponent(thread_id)}`).then(

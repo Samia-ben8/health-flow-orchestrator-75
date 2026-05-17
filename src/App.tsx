@@ -7,6 +7,7 @@ import { ConsultationProvider } from "@/context/ConsultationContext";
 import AppShell from "@/components/AppShell";
 import Index from "./pages/Index.tsx";
 import ConsultationLoading from "./pages/ConsultationLoading.tsx";
+import PatientQuestions from "./pages/PatientQuestions.tsx";
 import PhysicianReview from "./pages/PhysicianReview.tsx";
 import FinalReport from "./pages/FinalReport.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -23,6 +24,7 @@ const App = () => (
           <AppShell>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/questions" element={<PatientQuestions />} />
               <Route path="/consultation" element={<ConsultationLoading />} />
               <Route path="/review" element={<PhysicianReview />} />
               <Route path="/report" element={<FinalReport />} />

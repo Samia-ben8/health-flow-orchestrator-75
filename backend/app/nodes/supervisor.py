@@ -5,14 +5,23 @@ def supervisor_node(
     state: MedicalState
 ):
 
-    # Si workflow en attente médecin
-    if state.get("status") == "waiting_physician":
+    status = state.get("status")
+
+    # Collecte réponses patient
+    if status == "collecting_answers":
 
         return {
             "next": "FINISH"
         }
 
-    # Diagnostic pas encore généré
+    # Pause médecin
+    if status == "waiting_physician":
+
+        return {
+            "next": "FINISH"
+        }
+
+    # Pas encore diagnostic
     if not state.get(
         "diagnostic_summary"
     ):
@@ -21,7 +30,7 @@ def supervisor_node(
             "diagnostic_agent"
         )
 
-    # Attente revue médecin
+    # Attente médecin
     elif not state.get(
         "physician_treatment"
     ):
@@ -44,6 +53,5 @@ def supervisor_node(
         next_step = "FINISH"
 
     return {
-
         "next": next_step
     }

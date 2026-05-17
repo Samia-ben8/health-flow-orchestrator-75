@@ -3,6 +3,9 @@ from uuid import uuid4
 from fastapi import APIRouter
 
 from app.graph import graph
+from app.tools.patient_tools import (
+    get_next_question
+)
 
 
 router = APIRouter()
@@ -46,9 +49,86 @@ def start_consultation(
 
         "patient_answers": [],
 
-        "status": "running"
+        "status": "collecting_answers"
     }
 
+    sessions[thread_id] = initial_state
+
+    first_question = (
+        get_next_question(0)
+    )
+
+    return {
+
+        "success": True,
+
+        "thread_id": thread_id,
+
+        "question_number": 1,
+
+        "question": first_question
+    }
+
+# =========================
+# ANSWER QUESTION
+# =========================
+
+@router.post(
+    "/consultation/answer"
+)
+def answer_question(
+
+    thread_id: str,
+
+    answer: str
+):
+
+    session = sessions.get(thread_id)
+
+    if not session:
+
+        return {
+
+            "error":
+                "Session not found"
+        }
+
+    # Ajouter réponse
+    session[
+        "patient_answers"
+    ].append(answer)
+
+    session[
+        "question_count"
+    ] += 1
+
+    question_count = session[
+        "question_count"
+    ]
+
+    # Questions restantes
+    if question_count < 5:
+
+        next_question = (
+            get_next_question(
+                question_count
+            )
+        )
+
+        sessions[thread_id] = session
+
+        return {
+
+            "success": True,
+
+            "question_number":
+                question_count + 1,
+
+            "question":
+                next_question
+        }
+
+    # Après 5 réponses
     config = {
 
         "configurable": {
@@ -57,9 +137,11 @@ def start_consultation(
         }
     }
 
+    session["status"] = "running"
+
     result = graph.invoke(
 
-        initial_state,
+        session,
 
         config=config
     )
@@ -68,14 +150,12 @@ def start_consultation(
 
     return {
 
-    "success": True,
+        "success": True,
 
-    "thread_id": thread_id,
+        "completed_questions": True,
 
-    "data": result
+        "data": result
     }
-
-
 # =========================
 # RESUME CONSULTATION
 # =========================

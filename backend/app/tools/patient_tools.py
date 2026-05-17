@@ -15,21 +15,12 @@ QUESTIONS = [
 ]
 
 
-def ask_patient(state: MedicalState):
+def get_next_question(
+    question_count: int
+):
 
-    question_count = state.get(
-        "question_count",
-        0
-    )
+    if question_count >= len(QUESTIONS):
 
-    if question_count >= 5:
+        return None
 
-        return {
-            "current_question": None
-        }
-
-    question = QUESTIONS[question_count]
-
-    return {
-        "current_question": question
-    }
+    return QUESTIONS[question_count]

@@ -16,7 +16,7 @@ const features = [
 
 export default function Index() {
   const navigate = useNavigate();
-  const { setThreadId, setStage, setReviewData, reset } = useConsultation();
+  const { setThreadId, setStage, reset } = useConsultation();
   const [loading, setLoading] = useState(false);
 
   const handleStart = async () => {
@@ -26,17 +26,7 @@ export default function Index() {
       const session = await api.startSession();
       setThreadId(session.thread_id);
       setStage("running");
-      navigate("/consultation");
-
-      const result = await api.startConsultation(session.thread_id);
-      setReviewData({
-        diagnosticSummary: (result.diagnostic_summary as string) ?? "",
-        interimCare: (result.interim_care as string) ?? "",
-        workflowStatus: (result.status as string) ?? "waiting_physician",
-      });
-      setStage("physician_review");
-      toast.success("Consultation ready for physician review");
-      navigate("/review");
+      navigate("/questions");
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Failed to start consultation");

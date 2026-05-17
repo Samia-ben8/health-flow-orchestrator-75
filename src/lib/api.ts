@@ -1,4 +1,5 @@
-export const API_BASE = "http://127.0.0.1:8000";
+export const API_BASE =
+  (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://127.0.0.1:8000";
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -10,18 +11,38 @@ async function handle<T>(res: Response): Promise<T> {
 
 export interface SessionStartResponse {
   thread_id: string;
+  status?: string;
 }
 
-export interface ConsultationStartResponse {
+export interface MedicalStateData {
+  status?: string;
+  question_count?: number;
+  patient_answers?: string[];
   diagnostic_summary?: string;
   interim_care?: string;
-  status?: string;
+  physician_treatment?: string;
+  final_report?: string;
+  next?: string;
   [k: string]: unknown;
 }
 
-export interface ConsultationResumeResponse {
-  final_report?: string;
-  [k: string]: unknown;
+interface BackendEnvelope {
+  success?: boolean;
+  thread_id?: string;
+  data?: MedicalStateData;
+  error?: string;
+}
+
+async function unwrap(res: Response): Promise<MedicalStateData> {
+  const json = await handle<BackendEnvelope | MedicalStateData>(res);
+  if (json && typeof json === "object" && "error" in json && json.error) {
+    throw new Error(String(json.error));
+  }
+  // Envelope from /consultation/start and /consultation/resume
+  if (json && typeof json === "object" && "data" in json && json.data) {
+    return json.data as MedicalStateData;
+  }
+  return json as MedicalStateData;
 }
 
 export const api = {
@@ -31,7 +52,7 @@ export const api = {
   startConsultation: (thread_id: string) =>
     fetch(`${API_BASE}/consultation/start?thread_id=${encodeURIComponent(thread_id)}`, {
       method: "POST",
-    }).then(handle<ConsultationStartResponse>),
+    }).then(unwrap),
 
   resumeConsultation: (thread_id: string, physician_treatment: string) =>
     fetch(
@@ -39,13 +60,15 @@ export const api = {
         thread_id,
       )}&physician_treatment=${encodeURIComponent(physician_treatment)}`,
       { method: "POST" },
-    ).then(handle<ConsultationResumeResponse>),
+    ).then(unwrap),
 
   getConsultation: (thread_id: string) =>
-    fetch(`${API_BASE}/consultation/${encodeURIComponent(thread_id)}`).then(handle<Record<string, unknown>>),
+    fetch(`${API_BASE}/consultation/${encodeURIComponent(thread_id)}`).then(
+      handle<MedicalStateData>,
+    ),
 
   getReport: (thread_id: string) =>
     fetch(`${API_BASE}/consultation/${encodeURIComponent(thread_id)}/report`).then(
-      handle<Record<string, unknown>>,
+      handle<{ final_report?: string; error?: string }>,
     ),
 };

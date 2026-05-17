@@ -95,8 +95,12 @@ export default function FinalReport() {
 
           {/* Report body */}
           <div className="px-8 py-10 lg:px-12 lg:py-12">
-            <div className="report-body text-[15px]">
-              {finalReport || "No report content available."}
+            <div className="report-body prose prose-slate max-w-none text-[15px] prose-headings:font-display prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-a:text-primary prose-strong:text-foreground prose-table:text-sm">
+              {finalReport ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{finalReport}</ReactMarkdown>
+              ) : (
+                "No report content available."
+              )}
             </div>
           </div>
 

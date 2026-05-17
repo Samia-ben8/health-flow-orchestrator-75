@@ -29,11 +29,11 @@ export default function FinalReport() {
 
   const handleDownload = () => {
     if (!finalReport) return;
-    const blob = new Blob([finalReport], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([finalReport], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `mediflow-report-${threadId?.slice(0, 8) ?? "session"}.txt`;
+    a.download = `mediflow-report-${threadId?.slice(0, 8) ?? "session"}.md`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Report downloaded");

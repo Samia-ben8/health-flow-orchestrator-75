@@ -68,8 +68,8 @@ export default function PatientQuestions() {
         navigate("/review");
         return;
       }
-      setQuestionNumber(res.question_number);
-      setQuestion(res.question);
+      setQuestionNumber((res as { question_number: number }).question_number);
+      setQuestion((res as { question: string }).question);
       setAnswer("");
     } catch (err) {
       console.error(err);

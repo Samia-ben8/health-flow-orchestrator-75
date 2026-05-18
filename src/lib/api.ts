@@ -53,10 +53,13 @@ export const api = {
       .then(handle<SessionStartResponse & { error?: string }>)
       .then(throwIfError),
 
-  startConsultation: (thread_id: string) =>
-    fetch(`${API_BASE}/consultation/start?thread_id=${encodeURIComponent(thread_id)}`, {
-      method: "POST",
-    })
+  startConsultation: (thread_id: string, initial_case: string) =>
+    fetch(
+      `${API_BASE}/consultation/start?thread_id=${encodeURIComponent(
+        thread_id,
+      )}&initial_case=${encodeURIComponent(initial_case)}`,
+      { method: "POST" },
+    )
       .then(handle<QuestionResponse & { error?: string }>)
       .then(throwIfError),
 

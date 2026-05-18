@@ -14,36 +14,19 @@ const TOTAL_QUESTIONS = 5;
 
 export default function PatientQuestions() {
   const navigate = useNavigate();
-  const { threadId, setReviewData, setStage } = useConsultation();
-  const [questionNumber, setQuestionNumber] = useState<number>(1);
-  const [question, setQuestion] = useState<string>("");
+  const { threadId, firstQuestion, firstQuestionNumber, setReviewData, setStage } = useConsultation();
+  const [questionNumber, setQuestionNumber] = useState<number>(firstQuestionNumber ?? 1);
+  const [question, setQuestion] = useState<string>(firstQuestion ?? "");
+  const [loading, setLoading] = useState(!firstQuestion);
   const [answer, setAnswer] = useState("");
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load first question on mount
   useEffect(() => {
-    if (!threadId) {
+    if (!threadId || !firstQuestion) {
       navigate("/");
       return;
     }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api.startConsultation(threadId);
-        if (cancelled) return;
-        setQuestionNumber(res.question_number);
-        setQuestion(res.question);
-      } catch (err) {
-        console.error(err);
-        toast.error(err instanceof Error ? err.message : "Failed to load question");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 

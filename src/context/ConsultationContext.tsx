@@ -4,18 +4,27 @@ export type ConsultationStage = "idle" | "running" | "physician_review" | "final
 
 interface ConsultationState {
   threadId: string | null;
+  patientName: string | null;
+  initialCase: string | null;
+  firstQuestion: string | null;
+  firstQuestionNumber: number | null;
   stage: ConsultationStage;
   diagnosticSummary: string | null;
   interimCare: string | null;
   finalReport: string | null;
+  physicianTreatment: string | null;
   workflowStatus: string | null;
 }
 
 interface ConsultationContextValue extends ConsultationState {
   setThreadId: (id: string | null) => void;
+  setPatientName: (n: string | null) => void;
+  setInitialCase: (c: string | null) => void;
+  setFirstQuestion: (q: { question: string; questionNumber: number } | null) => void;
   setStage: (s: ConsultationStage) => void;
   setReviewData: (d: { diagnosticSummary?: string; interimCare?: string; workflowStatus?: string }) => void;
   setFinalReport: (r: string) => void;
+  setPhysicianTreatment: (t: string) => void;
   reset: () => void;
 }
 
@@ -23,10 +32,15 @@ const STORAGE_KEY = "mediflow:consultation";
 
 const initialState: ConsultationState = {
   threadId: null,
+  patientName: null,
+  initialCase: null,
+  firstQuestion: null,
+  firstQuestionNumber: null,
   stage: "idle",
   diagnosticSummary: null,
   interimCare: null,
   finalReport: null,
+  physicianTreatment: null,
   workflowStatus: null,
 };
 
@@ -53,6 +67,14 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
   const value: ConsultationContextValue = {
     ...state,
     setThreadId: (threadId) => setState((s) => ({ ...s, threadId })),
+    setPatientName: (patientName) => setState((s) => ({ ...s, patientName })),
+    setInitialCase: (initialCase) => setState((s) => ({ ...s, initialCase })),
+    setFirstQuestion: (q) =>
+      setState((s) => ({
+        ...s,
+        firstQuestion: q?.question ?? null,
+        firstQuestionNumber: q?.questionNumber ?? null,
+      })),
     setStage: (stage) => setState((s) => ({ ...s, stage })),
     setReviewData: (d) =>
       setState((s) => ({
@@ -62,6 +84,7 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
         workflowStatus: d.workflowStatus ?? s.workflowStatus,
       })),
     setFinalReport: (finalReport) => setState((s) => ({ ...s, finalReport, stage: "complete" })),
+    setPhysicianTreatment: (physicianTreatment) => setState((s) => ({ ...s, physicianTreatment })),
     reset: () => {
       sessionStorage.removeItem(STORAGE_KEY);
       setState(initialState);

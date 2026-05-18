@@ -30,6 +30,7 @@ export default function PhysicianReview() {
     setStage("finalizing");
     try {
       const result = await api.resumeConsultation(threadId, treatment.trim());
+      setPhysicianTreatment(treatment.trim());
       const report =
         (result.final_report as string) ?? JSON.stringify(result, null, 2);
       setFinalReport(report);

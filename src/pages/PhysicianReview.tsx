@@ -11,7 +11,7 @@ import { api } from "@/lib/api";
 
 export default function PhysicianReview() {
   const navigate = useNavigate();
-  const { threadId, diagnosticSummary, interimCare, workflowStatus, setFinalReport, setStage } =
+  const { threadId, diagnosticSummary, interimCare, workflowStatus, setFinalReport, setStage, setPhysicianTreatment } =
     useConsultation();
   const [treatment, setTreatment] = useState("");
   const [submitting, setSubmitting] = useState(false);

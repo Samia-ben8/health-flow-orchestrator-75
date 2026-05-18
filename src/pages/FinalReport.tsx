@@ -11,16 +11,34 @@ import { StatusBadge } from "@/components/StatusBadge";
 
 export default function FinalReport() {
   const navigate = useNavigate();
-  const { finalReport, threadId, reset } = useConsultation();
+  const { finalReport, threadId, patientName, reset } = useConsultation();
+  const reportDate = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   useEffect(() => {
     if (!finalReport) navigate("/");
   }, [finalReport, navigate]);
 
+  const buildFullReport = () => {
+    const header = `# Clinical Consultation Report
+
+**Patient Name:** ${patientName ?? "N/A"}  
+**Patient ID:** ${threadId ?? "N/A"}  
+**Date:** ${reportDate}
+
+---
+
+`;
+    return header + (finalReport ?? "");
+  };
+
   const handleCopy = async () => {
     if (!finalReport) return;
     try {
-      await navigator.clipboard.writeText(finalReport);
+      await navigator.clipboard.writeText(buildFullReport());
       toast.success("Report copied to clipboard");
     } catch {
       toast.error("Failed to copy");
@@ -29,7 +47,7 @@ export default function FinalReport() {
 
   const handleDownload = () => {
     if (!finalReport) return;
-    const blob = new Blob([finalReport], { type: "text/markdown;charset=utf-8" });
+    const blob = new Blob([buildFullReport()], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

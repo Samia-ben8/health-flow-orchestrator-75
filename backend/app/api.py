@@ -6,6 +6,9 @@ from app.graph import graph
 from app.tools.patient_tools import (
     get_next_question
 )
+from app.tools.question_generator import (
+    generate_dynamic_questions
+)
 
 
 router = APIRouter()
@@ -40,22 +43,39 @@ def start_session():
 
 @router.post("/consultation/start")
 def start_consultation(
-    thread_id: str
+
+    thread_id: str,
+
+    initial_case: str
 ):
 
+    generated_questions = (
+        generate_dynamic_questions(
+            initial_case
+        )
+    )
+
     initial_state = {
+
+        "initial_case":
+            initial_case,
+
+        "generated_questions":
+            generated_questions,
 
         "question_count": 0,
 
         "patient_answers": [],
 
-        "status": "collecting_answers"
+        "status":
+            "collecting_answers"
     }
 
     sessions[thread_id] = initial_state
 
     first_question = (
-        get_next_question(0)
+
+        generated_questions[0]
     )
 
     return {
@@ -68,7 +88,6 @@ def start_consultation(
 
         "question": first_question
     }
-
 # =========================
 # ANSWER QUESTION
 # =========================
@@ -109,11 +128,14 @@ def answer_question(
     # Questions restantes
     if question_count < 5:
 
-        next_question = (
-            get_next_question(
-                question_count
-            )
-        )
+        next_question = get_next_question(
+
+            session[
+                "generated_questions"
+            ],
+
+            question_count
+)
 
         sessions[thread_id] = session
 

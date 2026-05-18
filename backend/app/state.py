@@ -16,6 +16,10 @@ class MedicalState(TypedDict, total=False):
         "report_agent",
         "FINISH"
     ]
+    initial_case: str
+
+    generated_questions: list
+    
     status: str
 
     # Nombre de questions posées

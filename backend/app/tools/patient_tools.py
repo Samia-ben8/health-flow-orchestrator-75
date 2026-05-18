@@ -16,11 +16,14 @@ QUESTIONS = [
 
 
 def get_next_question(
+
+    questions: list,
+
     question_count: int
 ):
 
-    if question_count >= len(QUESTIONS):
+    if question_count >= len(questions):
 
         return None
 
-    return QUESTIONS[question_count]
+    return questions[question_count]

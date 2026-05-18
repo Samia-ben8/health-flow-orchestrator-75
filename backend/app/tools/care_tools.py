@@ -1,37 +1,61 @@
 from app.state import MedicalState
-from app.tools.mcp_client import (
-    get_mcp_medical_advice
-)
+
+from app.services.openai_service import llm
 
 
 def recommend_interim_care(
     state: MedicalState
 ):
 
+    initial_case = state.get(
+        "initial_case",
+        ""
+    )
+
+    questions = state.get(
+        "generated_questions",
+        []
+    )
+
     answers = state.get(
         "patient_answers",
         []
     )
 
-    recommendation = ""
+    clinical_context = ""
 
-    for answer in answers:
-
-        recommendation += (
-            "\n- " +
-            get_mcp_medical_advice(answer)
-        )
-
-    if any(
-        "breathing" in answer.lower()
-        for answer in answers
+    for q, a in zip(
+        questions,
+        answers
     ):
 
-        recommendation += """
+        clinical_context += (
+            f"\nQuestion: {q}"
+            f"\nAnswer: {a}\n"
+        )
 
-        - Seek urgent medical evaluation
-        """
+    prompt = f"""
+    You are a medical care assistant.
+
+    Initial patient case:
+    {initial_case}
+
+    Clinical interview:
+    {clinical_context}
+
+    Generate concise and medically
+    cautious interim recommendations.
+
+    IMPORTANT:
+    - No definitive diagnosis
+    - Focus on monitoring/safety
+    - Recommendations must match symptoms
+    """
+
+    response = llm.invoke(prompt)
 
     return {
-        "interim_care": recommendation
+
+        "interim_care":
+            response.content
     }

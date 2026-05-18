@@ -1,9 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, Brain, ShieldCheck, Stethoscope, Workflow, Sparkles, Activity } from "lucide-react";
+import { ArrowRight, Brain, ShieldCheck, Stethoscope, Workflow, Sparkles, Activity, User, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { useConsultation } from "@/context/ConsultationContext";
 
@@ -16,15 +19,33 @@ const features = [
 
 export default function Index() {
   const navigate = useNavigate();
-  const { setThreadId, setStage, reset } = useConsultation();
+  const { setThreadId, setStage, setPatientName, setInitialCase, setFirstQuestion, reset } =
+    useConsultation();
+  const [fullName, setFullName] = useState("");
+  const [symptoms, setSymptoms] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleStart = async () => {
+    if (!fullName.trim()) {
+      toast.error("Please enter the patient's full name");
+      return;
+    }
+    if (!symptoms.trim()) {
+      toast.error("Please describe the symptoms");
+      return;
+    }
     setLoading(true);
     reset();
     try {
       const session = await api.startSession();
       setThreadId(session.thread_id);
+      setPatientName(fullName.trim());
+      setInitialCase(symptoms.trim());
+      const first = await api.startConsultation(session.thread_id, symptoms.trim());
+      if (!("question" in first)) {
+        throw new Error("Unexpected response from backend");
+      }
+      setFirstQuestion({ question: first.question, questionNumber: first.question_number });
       setStage("running");
       navigate("/questions");
     } catch (err) {
@@ -36,6 +57,8 @@ export default function Index() {
     }
   };
 
+  const scrollToIntake = () => document.getElementById("intake")?.scrollIntoView({ behavior: "smooth" });
+
   return (
     <div className="min-h-screen gradient-subtle">
       {/* Hero */}
@@ -45,7 +68,7 @@ export default function Index() {
           <div className="absolute top-40 right-0 h-72 w-72 rounded-full bg-accent/20 blur-3xl" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-16 lg:pt-24 pb-16 animate-fade-in">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-16 lg:pt-20 pb-10 animate-fade-in">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border shadow-soft mb-6">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             <span className="text-xs font-medium text-foreground">LangGraph × FastAPI · Multi-Agent</span>
@@ -64,21 +87,11 @@ export default function Index() {
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Button
               size="lg"
-              onClick={handleStart}
-              disabled={loading}
+              onClick={scrollToIntake}
               className="h-14 px-8 text-base font-semibold gradient-hero hover:opacity-90 shadow-elegant transition-smooth border-0"
             >
-              {loading ? (
-                <>
-                  <Activity className="h-5 w-5 animate-pulse-soft" />
-                  Initializing...
-                </>
-              ) : (
-                <>
-                  Start Consultation
-                  <ArrowRight className="h-5 w-5" />
-                </>
-              )}
+              Start Consultation
+              <ArrowRight className="h-5 w-5" />
             </Button>
             <Button
               size="lg"
@@ -89,21 +102,81 @@ export default function Index() {
               Learn how it works
             </Button>
           </div>
-
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl">
-            {[
-              ["4", "AI Agents"],
-              ["1", "Physician Gate"],
-              ["100%", "Auditable"],
-              ["Real-time", "Orchestration"],
-            ].map(([v, l]) => (
-              <div key={l} className="px-4 py-3 rounded-xl bg-card/60 backdrop-blur border border-border">
-                <p className="font-display text-2xl font-bold text-foreground">{v}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{l}</p>
-              </div>
-            ))}
-          </div>
         </div>
+      </section>
+
+      {/* Intake Form */}
+      <section id="intake" className="max-w-3xl mx-auto px-6 lg:px-10 pb-16">
+        <Card className="p-6 lg:p-10 gradient-card border-border shadow-elegant">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="h-12 w-12 rounded-xl gradient-hero flex items-center justify-center shadow-soft shrink-0">
+              <FileText className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Step 1 of 4</p>
+              <h2 className="font-display text-2xl md:text-3xl font-bold mt-1">Patient Initial Intake</h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Describe your symptoms to begin the AI-powered clinical workflow.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-sm font-semibold flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-primary" /> Patient Full Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="e.g. Jane Doe"
+                disabled={loading}
+                maxLength={120}
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="symptoms" className="text-sm font-semibold">
+                Symptoms Description <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="symptoms"
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+                placeholder="Describe your symptoms..."
+                className="min-h-40 resize-y text-sm leading-relaxed"
+                disabled={loading}
+                maxLength={2000}
+              />
+              <p className="text-xs text-muted-foreground">
+                Example: "I have chest pain and dizziness for the last 2 days."
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                size="lg"
+                onClick={handleStart}
+                disabled={loading}
+                className="gradient-hero border-0 shadow-elegant hover:opacity-90"
+              >
+                {loading ? (
+                  <>
+                    <Activity className="h-5 w-5 animate-pulse-soft" />
+                    Generating clinical questions...
+                  </>
+                ) : (
+                  <>
+                    Start Consultation
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
       </section>
 
       {/* Features */}
@@ -137,12 +210,11 @@ export default function Index() {
           })}
         </div>
 
-        {/* Workflow diagram */}
         <Card className="mt-12 p-8 lg:p-10 gradient-card border-border shadow-soft">
           <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Workflow</p>
           <h3 className="font-display text-2xl font-bold mb-8">Consultation lifecycle</h3>
           <div className="grid md:grid-cols-5 gap-4 items-center">
-            {["Session", "Diagnostic Agent", "Interim Care", "Physician Gate", "Final Report"].map((step, i) => (
+            {["Intake", "Dynamic Interview", "Interim Care", "Physician Gate", "Final Report"].map((step, i) => (
               <div key={step} className="flex flex-col items-center text-center">
                 <div className="h-12 w-12 rounded-full gradient-hero flex items-center justify-center text-white font-display font-bold shadow-soft">
                   {i + 1}
